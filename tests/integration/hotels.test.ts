@@ -6,6 +6,7 @@ import httpStatus from "http-status";
 import supertest from "supertest";
 import { cleanDb, generateValidToken } from "../helpers";
 import { TicketStatus } from "@prisma/client";
+import { createHotel } from "../factories/hotels-factory";
 
 beforeAll(async () => {
   init();
@@ -23,11 +24,13 @@ describe("GET /hotels", () => {
     const res = await server.get("/hotels");
     expect(res.status).toBe(httpStatus.UNAUTHORIZED);
   });
+
   it("should respond with status 401 if given token is not valid", async () => {
     const token = faker.lorem.word();
     const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(httpStatus.UNAUTHORIZED);
   });
+
   it("should respond with status 401 if there is no session for given token", async () => {
     const userWithoutSession = await createUser();
     const token = jwt.sign({ userId: userWithoutSession.id }, process.env.JWT_SECRET);
@@ -43,6 +46,7 @@ describe("GET /hotels", () => {
       const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
       expect(res.status).toBe(httpStatus.NOT_FOUND);
     });
+    
     it("should respond with status 404 when user has no ticket", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
@@ -51,6 +55,7 @@ describe("GET /hotels", () => {
       const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
       expect(res.status).toBe(httpStatus.NOT_FOUND);
     });
+    
     it("should respond with status 404 when there are no hotels", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
@@ -61,6 +66,7 @@ describe("GET /hotels", () => {
       const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
       expect(res.status).toBe(httpStatus.NOT_FOUND);
     });
+    
     // 402 payment required
     it("should respond with status 402 when user has not paid ticket", async () => {
       const user = await createUser();
@@ -71,6 +77,7 @@ describe("GET /hotels", () => {
       const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
       expect(res.status).toBe(httpStatus.PAYMENT_REQUIRED);
     });
+    
     it("should respond with status 402 when ticket type is remote", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
@@ -80,6 +87,7 @@ describe("GET /hotels", () => {
       const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
       expect(res.status).toBe(httpStatus.PAYMENT_REQUIRED);
     });
+    
     it("should respond with status 402 when ticket doesn't include hotel", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
@@ -88,6 +96,27 @@ describe("GET /hotels", () => {
       const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.RESERVED);
       const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
       expect(res.status).toBe(httpStatus.PAYMENT_REQUIRED);
+    });
+    
+    it("should respond with status 200 and hotels when ticket is valid", async () => {
+      const user = await createUser();
+      const token = await generateValidToken(user);
+      const enrollment = await createEnrollmentWithAddress(user);
+      const ticketType = await createValidTicketType();
+      const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
+      const payment = await createPayment(ticket.id, ticketType.price);
+      const hotel = await createHotel();
+      const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(httpStatus.OK);
+      expect(res.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.any(Number),
+            name: expect.any(String),
+            image: expect.any(String)
+          })
+        ])
+      );
     });
   });
 });
