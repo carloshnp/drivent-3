@@ -11,3 +11,13 @@ export async function getHotelsList(req: AuthenticatedRequest, res: Response) {
     return res.sendStatus(httpStatus.NOT_FOUND);
   }
 }
+
+export async function getHotelById(req: AuthenticatedRequest, res: Response) {
+  const hotelId = parseInt(req.params.hotelId);
+  try {
+    const hotel = hotelService.getHotelRooms(hotelId);
+    res.status(200).send(hotel);
+  } catch (err) {
+    return res.sendStatus(httpStatus.NOT_FOUND);
+  }
+}
