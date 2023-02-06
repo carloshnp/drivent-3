@@ -5,7 +5,7 @@ async function getHotelsList() {
 }
 
 async function getHotelRooms(hotelId: number) {
-  return await prisma.hotel.findUnique({
+  return await prisma.hotel.findFirst({
     where: {
       id: hotelId
     },
