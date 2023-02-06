@@ -1,5 +1,5 @@
 import app, { init } from "@/app";
-import { createUser, createEnrollmentWithAddress, createTicketType, createValidTicketType, createTicket, createPayment } from "../factories";
+import { createUser, createEnrollmentWithAddress, createTicketType, createValidTicketType, createRemoteTicketType, createNoHotelTicketType,  createTicket, createPayment } from "../factories";
 import * as jwt from "jsonwebtoken";
 import faker from "@faker-js/faker";
 import httpStatus from "http-status";
@@ -61,7 +61,34 @@ describe("GET /hotels", () => {
       const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
       expect(res.status).toBe(httpStatus.NOT_FOUND);
     });
-    // 402 
+    // 402 payment required
+    it("should respond with status 402 when user has not paid ticket", async () => {
+      const user = await createUser();
+      const token = await generateValidToken(user);
+      const enrollment = await createEnrollmentWithAddress(user);
+      const ticketType = await createTicketType();
+      const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.RESERVED);
+      const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(httpStatus.PAYMENT_REQUIRED);
+    });
+    it("should respond with status 402 when ticket type is remote", async () => {
+      const user = await createUser();
+      const token = await generateValidToken(user);
+      const enrollment = await createEnrollmentWithAddress(user);
+      const ticketType = await createRemoteTicketType();
+      const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.RESERVED);
+      const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(httpStatus.PAYMENT_REQUIRED);
+    });
+    it("should respond with status 402 when ticket doesn't include hotel", async () => {
+      const user = await createUser();
+      const token = await generateValidToken(user);
+      const enrollment = await createEnrollmentWithAddress(user);
+      const ticketType = await createNoHotelTicketType();
+      const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.RESERVED);
+      const res = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(httpStatus.PAYMENT_REQUIRED);
+    });
   });
 });
 
