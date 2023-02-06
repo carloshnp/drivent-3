@@ -44,10 +44,16 @@ async function createTicket(userId: number, ticketTypeId: number) {
   return ticket;
 }
 
+async function findTickeWithTypeById(ticketId: number) {
+  const ticketType = await ticketRepository.findTickeWithTypeById(ticketId);
+  return ticketType;
+}
+
 const ticketService = {
   getTicketTypes,
   getTicketByUserId,
-  createTicket
+  createTicket,
+  findTickeWithTypeById
 };
 
 export default ticketService;
