@@ -122,19 +122,35 @@ describe("GET /hotels", () => {
 });
 
 describe("GET /hotels/:hotelId", () => {
+  // 401 token
   it("should respond with status 401 if no token is given", async () => {
-    const res = await server.get("/hotels/:hotelId");
+    const hotel = await createHotel();
+    const res = await server.get(`/hotels/${hotel.id}`);
     expect(res.status).toBe(httpStatus.UNAUTHORIZED);
   });
+
   it("should respond with status 401 if given token is not valid", async () => {
+    const hotel = await createHotel();
     const token = faker.lorem.word();
-    const res = await server.get("/hotels/:hotelId").set("Authorization", `Bearer ${token}`);
+    const res = await server.get(`/hotels/${hotel.id}`).set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(httpStatus.UNAUTHORIZED);
   });
+
   it("should respond with status 401 if there is no session for given token", async () => {
+    const hotel = await createHotel();
     const userWithoutSession = await createUser();
     const token = jwt.sign({ userId: userWithoutSession.id }, process.env.JWT_SECRET);
-    const res = await server.get("/hotels/:hotelId").set("Authorization", `Bearer ${token}`);
+    const res = await server.get(`/hotels/${hotel.id}`).set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(httpStatus.UNAUTHORIZED);
+  });
+
+  describe("when token is valid", () => {
+    it("should respond with status 404 when user has no enrollment", async () => {
+      const user = await createUser();
+      const hotel = await createHotel();
+      const token = await generateValidToken(user);
+      const res = await server.get(`/hotels/${hotel.id}`).set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(httpStatus.NOT_FOUND);
+    });
   });
 });
