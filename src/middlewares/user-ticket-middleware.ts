@@ -6,7 +6,7 @@ import httpStatus from "http-status";
 export async function validateUserTicket(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const { userId } = req;
   try {
-    const userTicket = ticketService.getTicketByUserId(userId);
+    const userTicket = await ticketService.getTicketByUserId(userId);
     res.locals.ticket = userTicket;
     next();
   } catch (err) {
